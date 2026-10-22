@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Froggy Jumps - English Vocabulary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #87CEEB; /* Sky blue */
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .font-game {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Animations */
+        @keyframes jump {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.1); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        
+        .anim-jump {
+            animation: jump 0.5s ease-in-out infinite;
+        }
+
+        @keyframes sink {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(50px) scale(0.5); opacity: 0; }
+        }
+
+        .anim-sink {
+            animation: sink 1s forwards;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px) scale(1.02); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Hujan Lebat Animation */
+        @keyframes rain-fall {
+            0% { transform: translateY(-50px) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(100vh) translateX(-20px); opacity: 0; }
+        }
+
+        .raindrop {
+            position: absolute;
+            width: 2px;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 5px;
+            animation: rain-fall linear infinite;
+        }
+
+        /* Efek Petir Menyambar */
+        @keyframes strike {
+            0% { opacity: 0; }
+            10% { opacity: 1; filter: drop-shadow(0 0 20px #facc15); }
+            20% { opacity: 0; }
+            30% { opacity: 1; }
+            40% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+
+        .lightning-bolt {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 90%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23facc15" stroke="%23ca8a04" stroke-width="1"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>') no-repeat center bottom / contain;
+            animation: strike 0.5s ease-out forwards;
+            z-index: 45;
+        }
+
+        @keyframes slide-down {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(100%); opacity: 0; }
+        }
+
+        .slide-down-leaves {
+            animation: slide-down 0.8s forwards;
+        }
+
+        /* Efek riak air sungai */
+        @keyframes water-ripple {
+            0% { transform: scale(0.1); opacity: 0.6; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        .ripple-drop {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            animation: water-ripple 3s ease-out infinite;
+        }
+
+        /* Efek tetesan air jatuh di sungai - Diubah ketinggian awalnya agar di bawah */
+        @keyframes drop-fall {
+            0% { transform: translateY(-30px) scaleY(1.5); opacity: 0; }
+            20% { opacity: 1; }
+            60% { transform: translateY(0) scaleY(1); opacity: 0; }
+            100% { opacity: 0; }
+        }
+        .water-drop {
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            animation: drop-fall 2s ease-in infinite;
+        }
+
+        /* Shine Animation for Buttons */
+        @keyframes slide-right {
+            0% { transform: translateX(-150%) skewX(-12deg); }
+            100% { transform: translateX(150%) skewX(-12deg); }
+        }
+        .leaf-btn:disabled {
+            opacity: 0.8;
+            cursor: not-allowed;
+        }
+        .leaf-btn:active:not(:disabled) {
+            transform: translateY(4px) rotate(-5deg);
+            border-bottom: 0px;
+        }
+        .leaf-btn span {
+            transform: rotate(5deg);
+            display: inline-block;
+        }
+
+        /* Player split screen container */
+        .player-lane {
+            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <!-- Top Left Controls -->
+    <div class="fixed top-2 left-2 z-50 flex gap-2">
+        <button id="btn-home" class="hidden w-12 h-12 bg-white/80 rounded-full shadow-lg text-xl flex items-center justify-center hover:bg-white transition" onclick="goHome()">
+            🏠
+        </button>
+    </div>
+
+    <!-- Top Right Controls -->
+    <div class="fixed top-2 right-2 z-50 flex gap-2">
+        <button id="btn-audio" class="w-12 h-12 bg-white/80 rounded-full shadow-lg text-xl flex items-center justify-center hover:bg-white transition" onclick="toggleAudio()">
+            🔇
+        </button>
+        <button id="btn-fullscreen" class="w-12 h-12 bg-white/80 rounded-full shadow-lg text-xl flex items-center justify-center hover:bg-white transition" onclick="toggleFullScreen()">
+            ⛶
+        </button>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-sky-400 via-blue-500 to-indigo-800 z-40 transition-opacity duration-500 overflow-hidden">
+        
+        <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+            <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-white rounded-full mix-blend-overlay blur-3xl animate-pulse duration-10000"></div>
+            <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-yellow-300 rounded-full mix-blend-overlay blur-3xl animate-pulse duration-7000" style="animation-delay: 1s;"></div>
+        </div>
+
+        <div class="z-10 flex flex-col items-center mt-2 md:mt-8">
+            <!-- Gambar Logo Froggy Jumps menggantikan Teks H1 -->
+            <img src="https://i.imgur.com/hspUwWg.png" alt="Froggy Jumps Logo" class="w-72 md:w-[450px] lg:w-[550px] mb-2 object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.6)] hover:scale-105 transition-transform duration-300 z-20">
+            
+            <h2 class="text-sm md:text-2xl font-bold text-white bg-gradient-to-r from-blue-900 to-indigo-900 px-8 py-3 rounded-full mb-8 md:mb-12 text-center shadow-xl border-4 border-yellow-400 backdrop-blur-md transform -rotate-2 z-20">
+                Pathway to English 1 - Bab 3 (Kelas 10)
+            </h2>
+        </div>
+        
+        <div class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-7xl px-4 z-10 pb-8 h-full md:h-auto">
+            
+            <div class="flex-1 flex justify-center md:justify-end relative group cursor-pointer w-full mt-4 md:mt-0">
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 md:w-[500px] md:h-[500px] bg-gradient-to-tr from-cyan-400 to-blue-600 rounded-full blur-3xl opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 animate-pulse"></div>
+                
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 md:w-[450px] md:h-[450px] border-[8px] border-white/30 border-dashed rounded-full animate-[spin_15s_linear_infinite]"></div>
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 md:w-[380px] md:h-[380px] border-[4px] border-yellow-300/60 rounded-full animate-[spin_10s_linear_infinite_reverse]"></div>
+                
+                <img src="https://i.imgur.com/hNm3nuY.png" 
+                     alt="Froggy Mascot" 
+                     class="relative w-72 md:w-[500px] lg:w-[600px] object-contain drop-shadow-[0_35px_35px_rgba(0,0,0,0.7)] group-hover:-translate-y-8 transition-transform duration-500 z-10"
+                     style="animation: float 4s ease-in-out infinite;">
+            </div>
+
+            <div class="flex-1 flex flex-col gap-5 w-full max-w-[90%] md:max-w-md mx-auto">
+                <button onclick="prepareGame(1)" class="relative w-full py-4 md:py-6 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 rounded-3xl border-b-[8px] border-green-800 text-white font-game text-2xl md:text-4xl transition-all active:translate-y-3 active:border-b-0 shadow-[0_15px_25px_rgba(0,0,0,0.4)] flex items-center justify-start px-6 md:px-8 gap-6 group overflow-hidden">
+                    <div class="absolute inset-0 bg-white/30 transform -skew-x-12 -translate-x-[150%] group-hover:animate-[slide-right_0.8s_ease-out]"></div>
+                    <div class="bg-white/20 p-3 rounded-2xl shadow-inner group-hover:rotate-12 transition-transform">
+                        <span class="text-4xl md:text-5xl drop-shadow-md">👤</span> 
+                    </div>
+                    <div class="text-left leading-tight drop-shadow-lg">
+                        SOLO<br><span class="text-sm md:text-base font-sans font-semibold opacity-90 text-green-100">20 Soal</span>
+                    </div>
+                </button>
+
+                <button onclick="prepareGame(2)" class="relative w-full py-4 md:py-6 bg-gradient-to-b from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 rounded-3xl border-b-[8px] border-yellow-800 text-white font-game text-2xl md:text-4xl transition-all active:translate-y-3 active:border-b-0 shadow-[0_15px_25px_rgba(0,0,0,0.4)] flex items-center justify-start px-6 md:px-8 gap-6 group overflow-hidden">
+                    <div class="absolute inset-0 bg-white/30 transform -skew-x-12 -translate-x-[150%] group-hover:animate-[slide-right_0.8s_ease-out]"></div>
+                    <div class="bg-white/20 p-3 rounded-2xl shadow-inner group-hover:rotate-12 transition-transform">
+                        <span class="text-4xl md:text-5xl drop-shadow-md">⚔️</span> 
+                    </div>
+                    <div class="text-left leading-tight drop-shadow-lg">
+                        DUEL<br><span class="text-sm md:text-base font-sans font-semibold opacity-90 text-yellow-100">10 Soal</span>
+                    </div>
+                </button>
+
+                <button onclick="prepareGame(4)" class="relative w-full py-4 md:py-6 bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 rounded-3xl border-b-[8px] border-red-900 text-white font-game text-2xl md:text-4xl transition-all active:translate-y-3 active:border-b-0 shadow-[0_15px_25px_rgba(0,0,0,0.4)] flex items-center justify-start px-6 md:px-8 gap-6 group overflow-hidden">
+                    <div class="absolute inset-0 bg-white/30 transform -skew-x-12 -translate-x-[150%] group-hover:animate-[slide-right_0.8s_ease-out]"></div>
+                    <div class="bg-white/20 p-3 rounded-2xl shadow-inner group-hover:rotate-12 transition-transform">
+                        <span class="text-4xl md:text-5xl drop-shadow-md">🛡️</span> 
+                    </div>
+                    <div class="text-left leading-tight drop-shadow-lg">
+                        SQUAD<br><span class="text-sm md:text-base font-sans font-semibold opacity-90 text-red-100">8 Soal</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div class="absolute bottom-4 text-white/90 font-bold text-sm md:text-base tracking-widest drop-shadow-lg z-10 bg-black/30 px-6 py-2 rounded-full border border-white/20 backdrop-blur-sm">
+            DIBUAT OLEH RIA RAFIKA, S.Pd., Gr.
+        </div>
+    </div>
+
+    <!-- Name Setup Menu -->
+    <div id="setup-menu" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-blue-900/95 z-40">
+        <h2 class="text-3xl font-game text-white mb-6">Masukkan Nama Pemain</h2>
+        <div id="name-inputs-container" class="flex flex-col md:flex-row gap-4 mb-8 w-full max-w-4xl px-4 justify-center">
+            <!-- Inputs generated here -->
+        </div>
+        <div class="flex gap-4">
+            <button onclick="goHome()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-bold text-lg shadow-lg">Kembali</button>
+            <button onclick="startActualGame()" class="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-xl shadow-lg shadow-green-900">Mulai Main!</button>
+        </div>
+    </div>
+
+    <!-- Game Arena -->
+    <div id="game-arena" class="flex-1 hidden w-full h-full bg-gray-900">
+        <!-- Player lanes will be injected here via JS -->
+    </div>
+
+    <script>
+        // Total 38 Kosakata Dibagi per Mode agar tidak berulang
+        const vocabSolo = [
+            { q: "Pakaian atau perlengkapan, seperti kaus (T-shirt) dan jaket tudung (Hoodies).", a: "Apparel" },
+            { q: "Membeli atau mendapatkan sesuatu.", a: "Purchase" },
+            { q: "Kesempatan atau peluang.", a: "Opportunity" },
+            { q: "Olahraga elektronik atau olahraga modern berbasis komputer.", a: "E-sports" },
+            { q: "Pertandingan atau turnamen kompetitif.", a: "Tournament" },
+            { q: "Hadiah atau penghargaan atas suatu pencapaian.", a: "Prize" },
+            { q: "Penggunaan metode yang terinspirasi dari permainan atau edukasi hiburan.", a: "Gamification" },
+            { q: "Didorong atau digerakkan maju.", a: "Propelled" },
+            { q: "Perantara atau penengah.", a: "Intermediary" },
+            { q: "Komponen atau bab dalam sebuah buku.", a: "Module" },
+            { q: "Didefinisikan, diartikan, atau dijelaskan.", a: "Defined" },
+            { q: "Memandang, melihat, atau menganggap.", a: "Regard" },
+            { q: "Berusaha, mencoba, atau upaya.", a: "Endeavor" },
+            { q: "Mengambil atau memperoleh sesuatu.", a: "Gaining" },
+            { q: "Menghasilkan uang, menerima gaji, atau dibayar.", a: "Earning" },
+            { q: "Pemasok, pengecer, atau pihak produsen penyedia barang.", a: "Supplier" },
+            { q: "Jumlah atau kuantitas.", a: "Amount" },
+            { q: "Membuat atau memproduksi.", a: "Manufacture" },
+            { q: "Berkaitan dengan jumlah yang besar, grosir, atau volume/massa yang banyak.", a: "Bulk" },
+            { q: "Kesepakatan, transaksi tukar tambah, atau tawar-menawar.", a: "Deal" }
+        ]; // 20 Kata
+
+        const vocabDuel = [
+            { q: "Istilah pesanan minimum yang berkaitan dengan jumlah massal.", a: "MOQ (Minimum Order Quantity)" },
+            { q: "Sepatu khusus olahraga, seperti sepatu sepak bola.", a: "Cleats" },
+            { q: "Istilah teknis untuk bantalan bagian dalam sepatu.", a: "Insole" },
+            { q: "Lelucon atau permainan sederhana untuk memulai percakapan.", a: "Icebreakers" },
+            { q: "Kosakata teknis yang berkaitan dengan tema kompetisi olahraga tradisional.", a: "Opponents, rules, field" },
+            { q: "Kosakata teknis yang berkaitan dengan iklan promosi produk.", a: "Price, discount, marketing" },
+            { q: "Adalah / Menjadi (Be)", a: "Am / Is / Are" },
+            { q: "Berbagi / Memiliki kesamaan", a: "Share" },
+            { q: "Membuat / Menjadikan", a: "Make" },
+            { q: "Memiliki / Mempunyai", a: "Have" }
+        ]; // 10 Kata
+
+        const vocabSquad = [
+            { q: "Bergerak", a: "Move" },
+            { q: "Membutuhkan / Memerlukan", a: "Require" },
+            { q: "Mencakup / Menempuh (jarak)", a: "Cover" },
+            { q: "Bertarung / Bertanding", a: "Battle" },
+            { q: "Menempati / Menduduki", a: "Occupy" },
+            { q: "Mempertahankan / Bertahan", a: "Defend" },
+            { q: "Mengendalikan / Mengontrol", a: "Control" },
+            { q: "Menjadi", a: "Become" }
+        ]; // 8 Kata
+
+        let activeVocab = [];
+        let players = [];
+        let numPlayers = 1;
+        let isAudioOn = false;
+        const TIME_PER_QUESTION = 15;
+        
+        let bgmSynth;
+        let sfxSynth;
+        let noiseSynth; 
+        let bgmLoop;
+
+        function initAudio() {
+            if(!sfxSynth) {
+                sfxSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+                
+                noiseSynth = new Tone.NoiseSynth({
+                    noise: { type: 'pink' },
+                    envelope: { attack: 0.05, decay: 0.5, sustain: 0, release: 0.5 }
+                }).toDestination();
+                noiseSynth.volume.value = -5; // Volume petir sedikit dikencangkan
+
+                bgmSynth = new Tone.FMSynth({
+                    modulationIndex: 12.22,
+                    envelope: { attack: 0.01, decay: 0.2 },
+                    modulation: { type: "square" },
+                    modulationEnvelope: { attack: 0.2, decay: 0.01 }
+                }).toDestination();
+                bgmSynth.volume.value = -15;
+
+                const notes = ["C4", "E4", "G4", "A4"];
+                let index = 0;
+                bgmLoop = new Tone.Loop(time => {
+                    bgmSynth.triggerAttackRelease(notes[index % notes.length], "8n", time);
+                    index++;
+                }, "4n");
+                Tone.Transport.bpm.value = 100;
+            }
+        }
+
+        function toggleAudio() {
+            if(!sfxSynth) initAudio();
+            
+            isAudioOn = !isAudioOn;
+            const btn = document.getElementById("btn-audio");
+            if(isAudioOn) {
+                Tone.start();
+                Tone.Transport.start();
+                bgmLoop.start(0);
+                btn.innerHTML = "🔊";
+            } else {
+                Tone.Transport.stop();
+                bgmLoop.stop();
+                btn.innerHTML = "🔇";
+            }
+        }
+
+        function playSound(type) {
+            if(!isAudioOn || !sfxSynth) return;
+            if(type === 'correct') {
+                sfxSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n");
+            } else if (type === 'wrong') {
+                sfxSynth.triggerAttackRelease(["C3", "Eb3"], "4n");
+                setTimeout(() => {
+                    if(noiseSynth) noiseSynth.triggerAttackRelease("4n");
+                }, 100);
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function goHome() {
+            players.forEach(p => stopTimer(p.id));
+            document.getElementById('game-arena').classList.add('hidden');
+            document.getElementById('setup-menu').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            document.getElementById('btn-home').classList.add('hidden');
+        }
+
+        function prepareGame(modesCount) {
+            if(Tone.context.state !== 'running') Tone.start();
+            if(!isAudioOn) toggleAudio();
+
+            numPlayers = modesCount;
+            document.getElementById('main-menu').classList.add('hidden');
+            const setupMenu = document.getElementById('setup-menu');
+            setupMenu.classList.remove('hidden');
+            
+            const container = document.getElementById('name-inputs-container');
+            container.innerHTML = '';
+            
+            for(let i=0; i<numPlayers; i++) {
+                container.innerHTML += `
+                    <div class="flex-1 flex flex-col items-center bg-white/10 p-4 rounded-xl">
+                        <label class="text-white font-bold mb-2">Pemain ${i+1}</label>
+                        <input type="text" id="input-name-${i}" placeholder="Nama..." value="Pemain ${i+1}" class="w-full p-2 rounded-lg text-center font-bold text-blue-900 outline-none focus:ring-4 focus:ring-green-400">
+                    </div>
+                `;
+            }
+        }
+
+        function startActualGame() {
+            document.getElementById('setup-menu').classList.add('hidden');
+            document.getElementById('btn-home').classList.remove('hidden');
+            const arena = document.getElementById('game-arena');
+            arena.classList.remove('hidden');
+            arena.innerHTML = ''; 
+
+            if(numPlayers === 1) {
+                arena.className = "flex-1 flex flex-col w-full h-full bg-gray-900";
+                activeVocab = vocabSolo;
+            } else if (numPlayers === 2) {
+                arena.className = "flex-1 grid grid-cols-2 w-full h-full divide-x-4 divide-blue-900 bg-gray-900";
+                activeVocab = vocabDuel;
+            } else if (numPlayers === 4) {
+                arena.className = "flex-1 grid grid-cols-4 w-full h-full divide-x-2 md:divide-x-4 divide-blue-900 bg-gray-900";
+                activeVocab = vocabSquad;
+            }
+
+            players = [];
+            for(let i=0; i<numPlayers; i++) {
+                const pName = document.getElementById(`input-name-${i}`).value || `Pemain ${i+1}`;
+                players.push({
+                    id: i,
+                    name: pName,
+                    score: 0,
+                    questionNum: 0,
+                    currentQ: null,
+                    timerInterval: null,
+                    timeLeft: TIME_PER_QUESTION
+                });
+                renderPlayerLane(i, arena);
+                nextQuestion(i);
+            }
+        }
+
+        function renderPlayerLane(pId, container) {
+            const lane = document.createElement('div');
+            lane.id = `lane-${pId}`;
+            lane.className = `player-lane flex flex-col h-full relative`;
+            
+            const pColors = ['text-white', 'text-yellow-200', 'text-red-200', 'text-green-200'];
+            const player = players[pId];
+
+            lane.innerHTML = `
+                <div class="absolute bottom-0 left-0 w-full h-[40%] bg-[rgba(29,78,216,0.4)] border-t-[3px] border-dashed border-white/30 z-0 overflow-hidden">
+                    <!-- Efek Air Jatuh berada di dalam area air di bawah jawaban -->
+                    <div class="water-drop top-[70%] left-[30%]" style="animation-delay: 0s;"></div>
+                    <div class="water-drop top-[80%] left-[55%]" style="animation-delay: 0.7s;"></div>
+                    <div class="water-drop top-[75%] left-[40%]" style="animation-delay: 1.2s;"></div>
+                    <div class="water-drop top-[85%] left-[70%]" style="animation-delay: 0.4s;"></div>
+                    
+                    <div class="ripple-drop w-8 h-8 top-[70%] left-[30%]"></div>
+                    <div class="ripple-drop w-12 h-12 top-[80%] left-[55%]" style="animation-delay: 0.7s;"></div>
+                    <div class="ripple-drop w-10 h-10 top-[75%] left-[40%]" style="animation-delay: 1.2s;"></div>
+                </div>
+                
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-center px-2 py-2 md:px-4 md:py-4 gap-1">
+                    <span class="font-game text-sm md:text-xl ${pColors[pId]} drop-shadow-md truncate w-full max-w-[50%]">${player.name}</span>
+                    <div class="flex items-center gap-1 bg-black/40 px-2 py-1 rounded-lg border border-white/20">
+                        <span class="text-yellow-400 text-sm md:text-xl drop-shadow-md">⭐</span>
+                        <span class="font-game text-base md:text-2xl text-white" id="score-${pId}">0</span>
+                    </div>
+                </div>
+
+                <div class="relative z-10 w-full h-2 bg-gray-300">
+                    <div id="timer-bar-${pId}" class="h-full bg-green-500 timer-bar w-full"></div>
+                </div>
+                
+                <div class="relative z-20 mx-2 md:mx-4 mt-2 bg-white/95 p-2 md:p-4 rounded-xl shadow-lg border-2 border-blue-300 min-h-[80px] md:min-h-[120px] flex flex-col items-center justify-center text-center overflow-hidden">
+                    <span id="qnum-${pId}" class="text-xs font-bold text-blue-500 mb-1">Soal 1</span>
+                    <span id="question-${pId}" class="text-blue-900 font-semibold text-xs md:text-base leading-tight">Loading...</span>
+                </div>
+
+                <div id="leaves-container-${pId}" class="relative z-20 flex-1 grid grid-cols-2 gap-2 md:gap-4 content-center items-center mt-2 mb-[120px] md:mb-[180px] w-full px-2 md:px-4">
+                </div>
+
+                <!-- Base Lilypad -->
+                <div class="absolute bottom-2 md:bottom-4 left-1/2 z-30 w-36 md:w-52 h-12 md:h-16 bg-green-500 border-b-[8px] md:border-b-[12px] border-green-800 shadow-2xl leaf-btn rounded-[100%]" style="transform: translateX(-50%) rotate(-2deg);"></div>
+
+                <!-- Frog Image & Container -->
+                <div id="frog-${pId}" class="absolute bottom-6 md:bottom-12 left-1/2 z-50 flex justify-center items-center" style="transform: translateX(-50%); transition: transform 0.5s ease-out;">
+                    <img id="frog-img-${pId}" src="https://i.imgur.com/vBbX6eC.png" class="w-16 md:w-28 h-auto drop-shadow-2xl" alt="Frog">
+                </div>
+                
+                <!-- Rumput Statis Menutupi Bawah -->
+                <div class="absolute -bottom-2 left-0 w-full h-24 md:h-32 z-40 pointer-events-none flex justify-between overflow-visible">
+                    <img src="https://i.imgur.com/Q39cMM9.png" class="absolute bottom-0 -left-6 w-[55%] h-auto" alt="rumput kiri">
+                    <img src="https://i.imgur.com/Q39cMM9.png" class="absolute bottom-0 left-[25%] w-[55%] h-auto" alt="rumput tengah">
+                    <img src="https://i.imgur.com/Q39cMM9.png" class="absolute bottom-0 -right-6 w-[55%] h-auto transform scale-x-[-1]" alt="rumput kanan">
+                </div>
+
+                <!-- Rain/Petir container -->
+                <div id="rain-${pId}" class="absolute inset-0 pointer-events-none z-30 hidden overflow-hidden"></div>
+            `;
+            container.appendChild(lane);
+        }
+
+        function generateOptions(correctAnswer) {
+            let options = [correctAnswer];
+            let usedIndexes = new Set();
+            let correctIndex = activeVocab.findIndex(v => v.a === correctAnswer);
+            usedIndexes.add(correctIndex);
+
+            while(options.length < 4) {
+                let r = Math.floor(Math.random() * activeVocab.length);
+                if(!usedIndexes.has(r)) {
+                    options.push(activeVocab[r].a);
+                    usedIndexes.add(r);
+                }
+            }
+            return options.sort(() => Math.random() - 0.5);
+        }
+
+        function startTimer(pId) {
+            const player = players[pId];
+            player.timeLeft = TIME_PER_QUESTION;
+            updateTimerUI(pId);
+            
+            player.timerInterval = setInterval(() => {
+                player.timeLeft--;
+                updateTimerUI(pId);
+                
+                if(player.timeLeft <= 0) {
+                    stopTimer(pId);
+                    handleTimeout(pId);
+                }
+            }, 1000);
+        }
+
+        function stopTimer(pId) {
+            clearInterval(players[pId].timerInterval);
+        }
+
+        function updateTimerUI(pId) {
+            const bar = document.getElementById(`timer-bar-${pId}`);
+            if(!bar) return;
+            const percentage = (players[pId].timeLeft / TIME_PER_QUESTION) * 100;
+            bar.style.width = `${percentage}%`;
+            
+            if(percentage > 50) bar.className = "h-full timer-bar w-full bg-green-500";
+            else if(percentage > 25) bar.className = "h-full timer-bar w-full bg-yellow-500";
+            else bar.className = "h-full timer-bar w-full bg-red-500";
+        }
+
+        function nextQuestion(pId) {
+            const player = players[pId];
+            player.questionNum++;
+            
+            // Cek apakah soal sudah habis
+            if (player.questionNum > activeVocab.length) {
+                document.getElementById(`qnum-${pId}`).innerText = `SELESAI!`;
+                document.getElementById(`qnum-${pId}`).className = `text-lg md:text-xl font-bold text-green-600`;
+                document.getElementById(`question-${pId}`).innerText = `Kerja Bagus!`;
+                
+                const leavesContainer = document.getElementById(`leaves-container-${pId}`);
+                leavesContainer.innerHTML = `
+                    <div class="col-span-2 flex flex-col items-center justify-center bg-white/95 p-4 rounded-3xl shadow-2xl border-4 border-yellow-400 transform transition-transform animate-bounce mt-4 mx-2">
+                        <img src="https://i.imgur.com/DIy1v8J.png" alt="Berhasil" class="w-24 md:w-32 mb-2 drop-shadow-xl">
+                        <h3 class="font-game text-lg md:text-2xl text-blue-900 mb-1">SKOR AKHIR</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-3xl md:text-5xl font-bold text-green-600">${player.score}</span>
+                            <span class="text-2xl md:text-4xl drop-shadow-md">⭐</span>
+                        </div>
+                    </div>
+                `;
+                
+                const frogImg = document.getElementById(`frog-img-${pId}`);
+                if(frogImg) frogImg.classList.add('anim-jump');
+                return;
+            }
+
+            // Ambil soal secara berurutan
+            const qData = activeVocab[player.questionNum - 1];
+            player.currentQ = qData;
+
+            const options = generateOptions(qData.a);
+
+            document.getElementById(`qnum-${pId}`).innerText = `Soal ${player.questionNum} dari ${activeVocab.length}`;
+            document.getElementById(`question-${pId}`).innerText = qData.q;
+            
+            const leavesContainer = document.getElementById(`leaves-container-${pId}`);
+            leavesContainer.innerHTML = '';
+            leavesContainer.classList.remove('slide-down-leaves');
+            
+            const frog = document.getElementById(`frog-${pId}`);
+            const frogImg = document.getElementById(`frog-img-${pId}`);
+            
+            frog.style.transition = "none";
+            frog.style.transform = "translateX(-50%) scale(1)"; 
+            
+            setTimeout(() => {
+                frog.style.transition = "transform 0.5s ease-out";
+            }, 50);
+
+            if(frogImg) {
+                frogImg.classList.remove('anim-sink', 'anim-jump');
+            }
+
+            options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = "leaf-btn w-full h-full min-h-[60px] md:min-h-[100px] flex items-center justify-center p-2 text-center text-xs md:text-sm lg:text-base font-bold text-white shadow-xl leading-tight mx-auto rounded-[30px] md:rounded-[50px] bg-green-600 border-b-[6px] md:border-b-[10px] border-green-900";
+                btn.innerHTML = `<span>${opt}</span>`;
+                btn.onclick = () => handleAnswer(pId, opt, btn);
+                leavesContainer.appendChild(btn);
+            });
+
+            startTimer(pId);
+        }
+
+        function handleAnswer(pId, selectedAnswer, btnElement) {
+            stopTimer(pId); 
+            
+            const player = players[pId];
+            const isCorrect = (selectedAnswer === player.currentQ.a);
+            const frog = document.getElementById(`frog-${pId}`);
+            const frogImg = document.getElementById(`frog-img-${pId}`);
+            
+            const fRect = frog.getBoundingClientRect();
+            const bRect = btnElement.getBoundingClientRect();
+            const dx = (bRect.left + bRect.width / 2) - (fRect.left + fRect.width / 2);
+            const dy = (bRect.top + bRect.height / 2) - (fRect.top + fRect.height / 2);
+
+            frog.style.transform = `translate(calc(-50% + ${dx}px), calc(${dy}px - 20px)) scale(1.2)`;
+
+            const leaves = document.getElementById(`leaves-container-${pId}`).querySelectorAll('button');
+            leaves.forEach(l => l.disabled = true);
+
+            if(isCorrect) {
+                playSound('correct');
+                player.score += 10;
+                document.getElementById(`score-${pId}`).innerText = player.score;
+                
+                if(frogImg) frogImg.classList.add('anim-jump');
+                btnElement.classList.add('!bg-green-400', 'border-white'); 
+
+                setTimeout(() => {
+                    document.getElementById(`leaves-container-${pId}`).classList.add('slide-down-leaves');
+                }, 800);
+
+                setTimeout(() => {
+                    if(frogImg) frogImg.classList.remove('anim-jump');
+                    nextQuestion(pId);
+                }, 1500);
+
+            } else {
+                playSound('wrong');
+                if(frogImg) frogImg.classList.add('anim-sink');
+                btnElement.classList.add('!bg-red-500'); 
+                
+                triggerRain(pId);
+
+                setTimeout(() => {
+                    if(frogImg) frogImg.classList.remove('anim-sink');
+                    stopRain(pId);
+                    nextQuestion(pId);
+                }, 2000);
+            }
+        }
+
+        function handleTimeout(pId) {
+            const leaves = document.getElementById(`leaves-container-${pId}`).querySelectorAll('button');
+            leaves.forEach(l => l.disabled = true);
+            
+            playSound('wrong');
+            const frogImg = document.getElementById(`frog-img-${pId}`);
+            if(frogImg) frogImg.classList.add('anim-sink');
+            
+            triggerRain(pId);
+
+            setTimeout(() => {
+                if(frogImg) frogImg.classList.remove('anim-sink');
+                stopRain(pId);
+                nextQuestion(pId);
+            }, 2000);
+        }
+
+        function triggerRain(pId) {
+            const rainContainer = document.getElementById(`rain-${pId}`);
+            rainContainer.classList.remove('hidden');
+            rainContainer.innerHTML = '';
+            
+            const flash = document.createElement('div');
+            flash.className = "absolute inset-0 bg-yellow-100 opacity-0 z-40";
+            flash.style.animation = "strike 0.5s ease-out forwards";
+            rainContainer.appendChild(flash);
+
+            const bolt = document.createElement('div');
+            bolt.className = 'lightning-bolt';
+            rainContainer.appendChild(bolt);
+
+            for(let i=0; i<100; i++) { 
+                const drop = document.createElement('div');
+                drop.className = 'raindrop';
+                drop.style.left = (Math.random() * 120 - 10) + '%';
+                drop.style.animationDuration = (Math.random() * 0.3 + 0.2) + 's';
+                drop.style.animationDelay = Math.random() * 0.5 + 's';
+                rainContainer.appendChild(drop);
+            }
+        }
+
+        function stopRain(pId) {
+            document.getElementById(`rain-${pId}`).classList.add('hidden');
+            document.getElementById(`rain-${pId}`).innerHTML = '';
+        }
+    </script>
+</body>
+</html>
